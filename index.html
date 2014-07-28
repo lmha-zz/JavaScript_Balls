@@ -11,13 +11,14 @@
 	function Circle(cx, cy, html_id, time)
 	{
 		var html_id = html_id;
-		this.info = { cx: cx,  cy: cy };
-
 		var radius = 5;
 
 		if(time > 150) {
 			radius = time/25;
 		}
+
+		this.info = { position:html_id, cx: cx,  cy: cy, r: radius };
+
 
 		//private function that generates a random number
 		var randomNumberBetween = function(min, max){
@@ -37,21 +38,21 @@
 				  	cy: this.info.cy,
 				  	r:  radius,
 				  	id: html_id,
-				  	style: "fill: gainsboro"
+				  	style: "fill:  rgb("+Math.floor(randomNumberBetween(0,255))+","+Math.floor(randomNumberBetween(0,255))+","+Math.floor(randomNumberBetween(0,255))+");"
 				});
 
 			document.getElementById('svg').appendChild(circle);
 		}
 
-		this.update = function(time){
-			var el = document.getElementById(html_id);
+		this.update = function(time, index){
+			var el = document.getElementById(index);
 
 			//see if the circle is going outside the browser. if it is, reverse the velocity
-			if( this.info.cx > (document.body.clientWidth)-30 || this.info.cx < 10)
+			if( this.info.cx+this.info.r+20 > document.body.clientWidth || this.info.cx-this.info.r < 0)
 			{
 				this.info.velocity.x = this.info.velocity.x * -1;
 			}
-			if( this.info.cy > (document.body.clientHeight)-30 || this.info.cy < 10)
+			if( this.info.cy+this.info.r+15 > document.body.clientHeight || this.info.cy-this.info.r < 0)
 			{
 				this.info.velocity.y = this.info.velocity.y * -1;
 			}
@@ -61,6 +62,7 @@
 
 			el.setAttribute("cx", this.info.cx);
 			el.setAttribute("cy", this.info.cy);
+			
 		}
 
 		//creates the SVG element and returns it
@@ -79,24 +81,39 @@
 	function PlayGround()
 	{
 		var counter = 0;  //counts the number of circles created
-		var circles = [ ]; //array that will hold all the circles created in the app
+		var circles = {}; //array that will hold all the circles created in the app
+		//create one circle when the game starts
 
+		this.createNewCircle = function(x,y,z){
+			var new_circle = new Circle(x,y,counter++,z);
+			circles[new_circle.info.position] = new_circle;
+			// console.log('created a new circle!', new_circle);
+		}
+		this.createNewCircle(document.body.clientWidth/2, document.body.clientHeight/2, 0, 300);
 		//a loop that updates the circle's position on the screen
 		this.loop = function(){
 			for(circle in circles)
 			{
-				circles[circle].update(1);
+				for(circle2 in circles) {
+					if((circle != null) && (circle != circle2) && (circle2 != null)) {
+						var minDistance = ((circles[circle].info.r) + (circles[circle2].info.r));
+						var actualDistance = Math.sqrt(Math.pow((circles[circle2].info.cx-circles[circle].info.cx), 2) + Math.pow((circles[circle2].info.cy-circles[circle].info.cy), 2));
+						if(actualDistance <= minDistance) {
+							document.getElementById(circles[circle2].info.position).remove();
+							delete circles[(circles[circle2].info.position)];
+							document.getElementById(circles[circle].info.position).remove();
+							delete circles[(circles[circle].info.position)];
+							break;
+						}					
+					}
+				}
+			}
+			for(circle in circles) {
+				if(typeof circle != 'undefined') {
+					circles[circle].update(1, (circles[circle].info.position));
+				}
 			}
 		}
-
-		this.createNewCircle = function(x,y,z){
-			var new_circle = new Circle(x,y,counter++,z);
-			circles.push(new_circle);
-			// console.log('created a new circle!', new_circle);
-		}
-
-		//create one circle when the game starts
-		this.createNewCircle(document.body.clientWidth/2, document.body.clientHeight/2);
 	}
 
 	var playground = new PlayGround();
